@@ -5,34 +5,52 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Skip if this version is already released
+      - name: Remove broken releases (missing update info)
+        shell: bash
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/releases" --jq '.[] | select(.draft==false) | select([.assets[].name] | index("latest.yml") | not) | .tag_name' | while read -r t; do
+            echo "Removing incomplete release $t"; gh release delete "$t" --yes --cleanup-tag || true
+          done
+      - name: Check version
         id: check
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           V=$(node -p "require('./package.json').version")
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          if gh release view "v$V" >/dev/null 2>&1; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
-      - name: Build and publish
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/v$V" --jq '[.assets[].name] | index("latest.yml")' 2>/dev/null | grep -q '[0-9]'; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Create draft release
         if: steps.check.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          V=${{ steps.check.outputs.version }}
+          gh release delete "v$V" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "v$V" --draft --title "Trench Scout $V" --notes "Download Trench-Scout-Setup-$V.exe below. Installed copies update automatically." --target "$GITHUB_SHA"
+      - name: Build and upload
+        if: steps.check.outputs.exists == 'false'
         shell: bash
         run: |
           set -o pipefail
           npm ci 2>&1 | tee build.log
           npx electron-builder --win nsis --x64 --publish always 2>&1 | tee -a build.log
+      - name: Publish release
+        if: steps.check.outputs.exists == 'false'
+        shell: bash
+        run: gh release edit "v${{ steps.check.outputs.version }}" --draft=false --latest
       - name: Report build errors
         if: failure()
         shell: bash
         run: |
-          tail -n 40 build.log | grep -v '^\s*$' | while IFS= read -r l; do echo "::error::${l:0:400}"; done
+          [ -f build.log ] && tail -n 40 build.log | grep -v '^\s*$' | while IFS= read -r l; do echo "::error::${l:0:400}"; done || true

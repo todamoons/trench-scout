@@ -1,6 +1,6 @@
 {
   "name": "trench-scout",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Safety checks, live narrative and social proof for Solana memecoins.",
   "main": "main.js",
   "scripts": {
@@ -58,7 +58,7 @@
         "provider": "github",
         "owner": "todamoons",
         "repo": "trench-scout",
-        "releaseType": "release"
+        "releaseType": "draft"
       }
     ]
   },
