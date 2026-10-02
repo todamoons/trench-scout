@@ -1,0 +1,69 @@
+{
+  "name": "trench-scout",
+  "version": "0.6.0",
+  "description": "Safety checks, live narrative and social proof for Solana memecoins.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64"
+  },
+  "author": "Trench Scout",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3"
+  },
+  "productName": "Trench Scout",
+  "build": {
+    "appId": "com.trenchscout.app",
+    "productName": "Trench Scout",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "bg/**",
+      "build/icon.png"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Trench Scout",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "runAfterFinish": true
+    },
+    "compression": "maximum",
+    "electronLanguages": [
+      "en-US"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "todamoons",
+        "repo": "trench-scout",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "repository": "https://github.com/todamoons/trench-scout"
+}

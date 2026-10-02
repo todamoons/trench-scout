@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https: data:; connect-src https://mainnet.helius-rpc.com https://api.dexscreener.com https://api.rugcheck.xyz https://api.anthropic.com https://api.x.com https://ipfs.io https://*.mypinata.cloud https://gateway.pinata.cloud https://cf-ipfs.com https://arweave.net https://*.arweave.net https://*.rapidlaunch.io https://nftstorage.link https://dweb.link">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trench Scout</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg></div>
+    <label class="search" for="q">
+      <input id="q" placeholder="Paste or copy a contract address" autocomplete="off" spellcheck="false">
+      <kbd>Ctrl V</kbd>
+    </label>
+    <button class="icon" id="pinBtn" title="Keep window on top (P)" aria-label="Keep window on top"><svg viewBox="0 0 24 24"><path d="M9 3h6l-1 6 4 4H6l4-4-1-6zM12 13v8"/></svg></button>
+  </header>
+
+  <main id="views">
+    <!-- SCAN -->
+    <section class="view" id="v-scan">
+      <div id="scanEmpty" class="empty">
+        <div class="radar-anim" aria-hidden="true"><span></span></div>
+        <h1>Copy a contract address</h1>
+        <p>Trench Scout scans it the moment it hits your clipboard: safety, dev history and the narrative behind it.</p>
+        <div id="radarStatus" class="radar-status"></div>
+      </div>
+
+      <div id="scanLoading" class="loading" hidden><div class="bar"></div><span id="loadTxt">Scanning…</span></div>
+      <div id="scanErr" class="errbox" hidden></div>
+
+      <div id="scanOut" hidden>
+        <div class="hud">
+          <div class="hud-id">
+            <div class="gauge" id="gauge" title="Safety score">
+              <svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="28"/><circle class="arc" id="gaugeArc" cx="32" cy="32" r="28"/></svg>
+              <img id="tokImg" alt="">
+              <span class="score" id="score">–</span>
+            </div>
+            <div class="idtext">
+              <div class="tname"><span id="tName"></span><span class="sym" id="tSym"></span></div>
+              <button class="ca" id="tCa" title="Copy contract address"></button>
+            </div>
+            <div class="badges">
+              <span class="verdict" id="verdict"></span>
+              <span class="heat" id="heat" hidden></span>
+            </div>
+          </div>
+
+          <div class="take" id="take"><span class="shimmer"></span></div>
+          <p class="narr" id="narr"></p>
+          <div class="flags" id="flags"></div>
+
+          <div class="strip" id="strip"></div>
+
+          <div class="actions">
+            <button id="watchBtn" class="act"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span>Watch</span></button>
+            <button id="deepBtn" class="act"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><span>Deep read</span></button>
+            <a id="axLink" class="act" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg><span>Axiom</span></a>
+            <a id="xLink" class="act" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M4 4l16 16M20 4L4 20"/></svg><span>Search X</span></a>
+          </div>
+        </div>
+
+        <nav class="tabs" role="tablist">
+          <button role="tab" data-tab="read" aria-selected="true">Read</button>
+          <button role="tab" data-tab="safety">Safety <i id="safetyCount"></i></button>
+          <button role="tab" data-tab="dev">Dev</button>
+          <button role="tab" data-tab="x">X</button>
+          <button role="tab" data-tab="links">Links</button>
+        </nav>
+        <div class="tabbody">
+          <div class="pane" data-pane="read"><div id="readBody" class="readbody"></div><div class="srcs" id="srcs"></div></div>
+          <div class="pane" data-pane="safety" hidden><div id="alerts"></div><div class="grid" id="chkgrid"></div><ul class="risks" id="risks"></ul></div>
+          <div class="pane" data-pane="dev" hidden><div id="devbody"></div></div>
+          <div class="pane" data-pane="x" hidden><div id="xbody"></div></div>
+          <div class="pane" data-pane="links" hidden><div id="linkbody" class="linklist"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RADAR -->
+    <section class="view" id="v-radar" hidden>
+      <div class="vhead"><h2>Narrative radar</h2><button id="radarRefresh" class="ghost">Refresh</button></div>
+      <p class="vsub" id="radarSub">What's trending right now. Every scan is checked against this, so reads stay fast without searching per coin.</p>
+      <div id="radarList" class="radarlist"></div>
+    </section>
+
+    <!-- WATCHLIST -->
+    <section class="view" id="v-watch" hidden>
+      <div class="vhead"><h2>Watchlist</h2></div>
+      <p class="vsub">New coins matching these topics trigger a notification. Checked every 2 minutes.</p>
+      <div class="addrow"><input id="wlIn" placeholder="Add a topic, like Kai Cenat" autocomplete="off"><button id="wlAdd" class="primary">Add</button></div>
+      <div class="chips" id="wlChips"></div>
+      <h3>New matches</h3>
+      <div id="wlHits" class="rows"></div>
+      <h3>Recent scans</h3>
+      <div id="hist" class="chips"></div>
+    </section>
+
+    <!-- ALERTS -->
+    <section class="view" id="v-alerts" hidden>
+      <div class="vhead"><h2>Alerts</h2></div>
+      <p class="vsub">Coins you're watching. You're notified on fast dumps, pulled liquidity, dev selling or a top holder dumping.</p>
+      <div class="chips" id="watchList"></div>
+      <h3>Recent alerts</h3>
+      <div id="alertLog" class="rows"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="v-settings" hidden>
+      <div class="vhead"><h2>Settings</h2><span class="ver" id="ver"></span></div>
+      <div class="form">
+        <label for="keyIn">Claude API key <em>required for AI reads</em></label>
+        <input id="keyIn" type="password" placeholder="sk-ant-..." autocomplete="off">
+        <label for="hIn">Helius API key <em>free, for dev history</em></label>
+        <input id="hIn" type="password" placeholder="From dashboard.helius.dev" autocomplete="off">
+        <label for="xIn">X API bearer token <em>optional, for the X tab</em></label>
+        <input id="xIn" type="password" placeholder="AAAA..." autocomplete="off">
+
+        <fieldset>
+          <legend>Read quality</legend>
+          <label class="radio"><input type="radio" name="model" value="smart"> Smart <em>sharper reads, about 2–3 s</em></label>
+          <label class="radio"><input type="radio" name="model" value="fast"> Fastest <em>about 1 s, simpler</em></label>
+        </fieldset>
+        <label class="tog"><input type="checkbox" id="radarTog"> Narrative radar <em>refreshes trends every 15 min, about 5–10¢ each</em></label>
+        <label class="tog"><input type="checkbox" id="xAuto"> Run the X check automatically on coins that aren't high risk <em>10–15¢ each</em></label>
+        <label class="tog"><input type="checkbox" id="clipTog"> Scan addresses I copy</label>
+        <div class="formbtns"><button id="setSave" class="primary">Save settings</button><span id="saved" class="ok" hidden>Saved</span></div>
+        <p class="fine">Keys are encrypted on this PC and only ever sent to their own services (Anthropic, Helius, X). Trench Scout never touches your wallet. Never connect a wallet to a coin's website.</p>
+        <div class="update" id="updateBox" hidden></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom" aria-label="Sections">
+    <button data-view="scan" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-3"/></svg>Scan</button>
+    <button data-view="radar"><svg viewBox="0 0 24 24"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg>Radar</button>
+    <button data-view="watch"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Watchlist<i id="hitDot" hidden></i></button>
+    <button data-view="alerts"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>Alerts<i id="alertDot" hidden></i></button>
+    <button data-view="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</button>
+  </nav>
+  <div class="toast" id="toast" hidden></div>
+</div>
+<script src="shim.js"></script>
+<script src="shared.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>
