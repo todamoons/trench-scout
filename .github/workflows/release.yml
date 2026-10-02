@@ -26,6 +26,13 @@ jobs:
         if: steps.check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          npm ci
-          npx electron-builder --win nsis --x64 --publish always
+          set -o pipefail
+          npm ci 2>&1 | tee build.log
+          npx electron-builder --win nsis --x64 --publish always 2>&1 | tee -a build.log
+      - name: Report build errors
+        if: failure()
+        shell: bash
+        run: |
+          tail -n 40 build.log | grep -v '^\s*$' | while IFS= read -r l; do echo "::error::${l:0:400}"; done
